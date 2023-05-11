@@ -345,3 +345,60 @@ optional arguments:
 [python-url]: https://www.python.org/
 [pytorch-image]: https://img.shields.io/badge/PyTorch-1.5-2BAF2B.svg
 [pytorch-url]: https://pytorch.org/
+
+
+# matom.ai bit
+
+Input LIDAR data is saved in binary files.
+Accessed via 
+
+```
+np.fromfile(lidar_file, dtype=np.float32).reshape(-1, 4)
+```
+
+where `lidar_file` is filename.
+
+`N` by `4` matrix.
+
+
+Labels are saved as txt files.
+Each line looks like such:
+```
+Car 0.00 0 -1.50 601.96 177.01 659.15 229.51 1.61 1.66 3.20 0.70 1.76 23.88 -1.48
+```
+
+```
+<Type> <truncation> <occlusion> <angle> <xmin> <ymin> <xmax> <ymax> <h> <w> <l> <t.x> <t.y> <t.z> <yaw> <score>
+```
+Type: What is it (car, pedestrian,...)
+In our case will likely be ,,yellow box thingy''.
+
+Code handling the rest of the data is such.
+```python
+        self.truncation = data[1]  # truncated pixel ratio [0..1]
+        self.occlusion = int(data[2])  # 0=visible, 1=partly occluded, 2=fully occluded, 3=unknown
+        self.alpha = data[3]  # object observation angle [-pi..pi]
+
+        # extract 2d bounding box in 0-based coordinates
+        self.xmin = data[4]  # left
+        self.ymin = data[5]  # top
+        self.xmax = data[6]  # right
+        self.ymax = data[7]  # bottom
+        self.box2d = np.array([self.xmin, self.ymin, self.xmax, self.ymax])
+
+        # extract 3d bounding box information
+        self.h = data[8]  # box height
+        self.w = data[9]  # box width
+        self.l = data[10]  # box length (in meters)
+        self.t = (data[11], data[12], data[13])  # location (x,y,z) in camera coord.
+        self.dis_to_cam = np.linalg.norm(self.t)
+        self.ry = data[14]  # yaw angle (around Y-axis in camera coordinates) [-pi..pi]
+        self.score = data[15] if data.__len__() == 16 else -1.0
+```
+
+`src/data_process/kitti_bev_utils.py:91` is where the relevant bits are taken.
+They are such:
+
+```python
+            bbox.extend([obj.t[0], obj.t[1], obj.t[2], obj.h, obj.w, obj.l, obj.ry])
+```
