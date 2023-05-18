@@ -219,6 +219,7 @@ class Darknet(nn.Module):
                 outputs[ind] = x
             elif block['type'] == 'yolo':
                 x, layer_loss = self.models[ind](x, targets, img_size, self.use_giou_loss)
+                #print(layer_loss)
                 loss += layer_loss
                 yolo_outputs.append(x)
             elif block['type'] == 'cost':

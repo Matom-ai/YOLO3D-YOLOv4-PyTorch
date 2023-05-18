@@ -10,6 +10,8 @@ CLASS_NAME_TO_ID = {
     'Person_sitting': 1,
 }
 
+#NOTE: Replaced this temporarily
+'''
 # Front side (of vehicle) Point Cloud boundary for BEV
 boundary = {
     "minX": 0,
@@ -18,6 +20,15 @@ boundary = {
     "maxY": 25,
     "minZ": -2.73,
     "maxZ": 1.27
+}
+'''
+boundary = {
+    "minX": -2000,
+    "maxX": 2000,
+    "minY": -2000,
+    "maxY": 2000,
+    "minZ": -2000,
+    "maxZ": 2000
 }
 
 # Back back (of vehicle) Point Cloud boundary for BEV
@@ -39,6 +50,7 @@ colors = [[0, 255, 255], [0, 0, 255], [255, 0, 0]]
 
 # Following parameters are calculated as an average from KITTI dataset for simplicity
 #####################################################################################
+#NOTE WHAT IS THIS GARBAGE
 Tr_velo_to_cam = np.array([
     [7.49916597e-03, -9.99971248e-01, -8.65110297e-04, -6.71807577e-03],
     [1.18652889e-02, 9.54520517e-04, -9.99910318e-01, -7.33152811e-02],

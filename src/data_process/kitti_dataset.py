@@ -25,8 +25,9 @@ import config.kitti_config as cnf
 
 
 class KittiDataset(Dataset):
-    def __init__(self, dataset_dir, mode='train', lidar_transforms=None, aug_transforms=None, multiscale=False,
-                 num_samples=None, mosaic=False, random_padding=False):
+    def __init__(self, dataset_dir, mode='train', lidar_transforms=None,
+                 aug_transforms=None, multiscale=False, num_samples=None,
+                 mosaic=False, random_padding=False):
         self.dataset_dir = dataset_dir
         assert mode in ['train', 'val', 'test'], 'Invalid mode: {}'.format(mode)
         self.mode = mode
@@ -50,6 +51,7 @@ class KittiDataset(Dataset):
         self.label_dir = os.path.join(self.dataset_dir, sub_folder, "label_2")
         split_txt_path = os.path.join(self.dataset_dir, 'ImageSets', '{}.txt'.format(mode))
         self.image_idx_list = [x.strip() for x in open(split_txt_path).readlines()]
+
 
         if self.is_test:
             self.sample_id_list = [int(sample_id) for sample_id in self.image_idx_list]
@@ -114,6 +116,7 @@ class KittiDataset(Dataset):
 
         if self.aug_transforms is not None:
             rgb_map, targets = self.aug_transforms(rgb_map, targets)
+
 
         return img_file, rgb_map, targets
 
@@ -182,8 +185,11 @@ class KittiDataset(Dataset):
             calib = self.get_calib(sample_id)
             labels, noObjectLabels = kitti_bev_utils.read_labels_for_bevbox(objects)
             if not noObjectLabels:
-                labels[:, 1:] = transformation.camera_to_lidar_box(labels[:, 1:], calib.V2C, calib.R0,
-                                                                   calib.P)  # convert rect cam to velo cord
+                labels[:, 1:] = transformation.camera_to_lidar_box(
+                        labels[:, 1:],
+                        calib.V2C,
+                        calib.R0,
+                        calib.P)  # convert rect cam to velo cord
 
             valid_list = []
             for i in range(labels.shape[0]):

@@ -208,7 +208,10 @@ class YoloLayer(nn.Module):
         else:
             self.reduction = 'mean'
             iou_scores, giou_loss, class_mask, obj_mask, noobj_mask, tx, ty, tz, th, tw, tl, tim, tre, tcls, tconf = self.build_targets(
-                pred_boxes=pred_boxes, pred_cls=pred_cls, target=targets, anchors=self.scaled_anchors)
+                    pred_boxes=pred_boxes,
+                    pred_cls=pred_cls,
+                    target=targets,
+                    anchors=self.scaled_anchors)
 
             loss_x = F.mse_loss(pred_x[obj_mask], tx[obj_mask], reduction=self.reduction)
             loss_y = F.mse_loss(pred_y[obj_mask], ty[obj_mask], reduction=self.reduction)
@@ -226,6 +229,34 @@ class YoloLayer(nn.Module):
             loss_conf_obj = F.binary_cross_entropy(pred_conf[obj_mask], tconf[obj_mask], reduction=self.reduction)
             loss_conf_noobj = F.binary_cross_entropy(pred_conf[noobj_mask], tconf[noobj_mask], reduction=self.reduction)
             loss_cls = F.binary_cross_entropy(pred_cls[obj_mask], tcls[obj_mask], reduction=self.reduction)
+
+            '''
+            print("===")
+            print(f"obj_mask: {obj_mask}")
+            input()
+            print(f"pred_x: {pred_x}")
+            input()
+            print(f"pred_x[obj_mask]: {pred_x[obj_mask]}")
+            input()
+            print(f"tx: {tx}")
+            input()
+            print(f"tx[obj_mask]: {tx[obj_mask]}")
+            input()
+            print("===")
+            print(f"loss_x: {loss_x}")
+            print(f"loss_y: {loss_y}")
+            print(f"loss_z: {loss_z}")
+            print(f"loss_h: {loss_h}")
+            print(f"loss_w: {loss_w}")
+            print(f"loss_l: {loss_l}")
+            print(f"giou_loss: {giou_loss}")
+            print(f"loss_box: {loss_box}")
+            print(f"loss_im: {loss_im}")
+            print(f"loss_re: {loss_re}")
+            print(f"loss_cls: {loss_cls}")
+            print(f"loss_conf_obj: {loss_conf_obj}")
+            print(f"loss_conf_noobj: {loss_conf_noobj}")
+            '''
 
             if self.use_giou_loss:
                 loss_obj = loss_conf_obj + loss_conf_noobj

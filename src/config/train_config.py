@@ -149,7 +149,9 @@ def parse_train_configs():
     ####################################################################
     ############## Dataset, logs, Checkpoints dir ######################
     ####################################################################
-    configs.dataset_dir = os.path.join(configs.root_dir, 'dataset', 'kitti')
+    #Nicely hardcoded, assholes NOTE: stuff here.
+    #configs.dataset_dir = os.path.join(configs.root_dir, 'dataset', 'kitti')
+    configs.dataset_dir = os.path.join(configs.root_dir, 'dataset', 'zupt')
     configs.checkpoints_dir = os.path.join(configs.root_dir, 'checkpoints', configs.saved_fn)
     configs.logs_dir = os.path.join(configs.root_dir, 'logs', configs.saved_fn)
 

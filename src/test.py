@@ -17,6 +17,7 @@ from easydict import EasyDict as edict
 import cv2
 import torch
 import numpy as np
+import matplotlib.pyplot as plt
 
 sys.path.append('../')
 
@@ -78,7 +79,8 @@ def parse_test_configs():
     ##############Dataset, Checkpoints, and results dir configs#########
     ####################################################################
     configs.root_dir = '../'
-    configs.dataset_dir = os.path.join(configs.root_dir, 'dataset', 'kitti')
+    #configs.dataset_dir = os.path.join(configs.root_dir, 'dataset', 'kitti')
+    configs.dataset_dir = os.path.join(configs.root_dir, 'dataset', 'zupt')
 
     if configs.save_test_output:
         configs.results_dir = os.path.join(configs.root_dir, 'results', configs.saved_fn)
@@ -158,7 +160,13 @@ if __name__ == '__main__':
                     raise TypeError
 
             if configs.show_image:
+                # VSL: This is very nasty
+                print(out_img)
                 cv2.imshow('test-img', out_img)
+                #plt.imshow(cv2.cvtColor(out_img, cv2.BGR2RGB))
+                #matplotlib.use('pyqt5')
+                #plt.imshow(out_img)
+                #plt.show()
                 print('\n[INFO] Press n to see the next sample >>> Press Esc to quit...\n')
                 if cv2.waitKey(0) & 0xFF == 27:
                     break

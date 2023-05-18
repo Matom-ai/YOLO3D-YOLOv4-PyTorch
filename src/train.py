@@ -195,6 +195,7 @@ def train_one_epoch(train_dataloader, model, optimizer, lr_scheduler, epoch, con
     batch_time = AverageMeter('Time', ':6.3f')
     data_time = AverageMeter('Data', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
+    #os.environ['CUDA_LAUNCH_BLOCKING'] = "1" #NOTE: Remove later. Debugging.
 
     progress = ProgressMeter(len(train_dataloader), [batch_time, data_time, losses],
                              prefix="Train - Epoch: [{}/{}]".format(epoch, configs.num_epochs))

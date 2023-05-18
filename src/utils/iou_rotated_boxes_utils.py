@@ -88,6 +88,7 @@ def get_corners_3d(x, y, z, h, w, l, yaw):
     :param x, y, z, h, w, l, yaw: [num_boxes,]
     :return: num_boxes x (x, y, z) of 8 conners
     """
+    #print(f"get_corners_3d({x}, {y}, {z}, {h}, {w}, {l}, {yaw})")
     device = x.device
     box_conners = torch.zeros((x.size(0), 8, 3), device=device, dtype=torch.float)
     cos_yaw = torch.cos(yaw)

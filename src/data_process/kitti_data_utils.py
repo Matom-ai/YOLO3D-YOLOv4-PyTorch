@@ -50,12 +50,14 @@ class Object3d(object):
     def cls_type_to_id(self, cls_type):
         # Car and Van ==> Car class
         # Pedestrian and Person_Sitting ==> Pedestrian Class
+        # NOTE: WHAT IS THIS LMAOOOOOOOOOOOOOOOOOOOOOOOO
         CLASS_NAME_TO_ID = {
             'Car': 0,
             'Pedestrian': 1,
             'Cyclist': 2,
             'Van': 0,
-            'Person_sitting': 1
+            'Person_sitting': 1,
+            'Box': 3
         }
         if cls_type not in CLASS_NAME_TO_ID.keys():
             return -1
@@ -102,9 +104,10 @@ class Calibration(object):
         Points in <lidar>.bin are in Velodyne coord.
 
         y_image2 = P^2_rect * x_rect
-        y_image2 = P^2_rect * R0_rect * Tr_velo_to_cam * x_velo
+        y_image2 = P^2_rect * R0_rect * Tr_velo_to_cam * x_velo !!!
         x_ref = Tr_velo_to_cam * x_velo
         x_rect = R0_rect * x_ref
+
 
         P^2_rect = [f^2_u,  0,      c^2_u,  -f^2_u b^2_x;
                     0,      f^2_v,  c^2_v,  -f^2_v b^2_y;
