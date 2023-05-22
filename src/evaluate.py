@@ -117,7 +117,9 @@ def parse_eval_configs():
     ##############Dataset, Checkpoints, and results dir configs#########
     ####################################################################
     configs.root_dir = '../'
-    configs.dataset_dir = os.path.join(configs.root_dir, 'dataset', 'kitti')
+    #configs.dataset_dir = os.path.join(configs.root_dir, 'dataset', 'kitti')
+    #configs.dataset_dir = os.path.join(configs.root_dir, 'dataset', 'zupt')
+    configs.dataset_dir = os.path.join(configs.root_dir, 'dataset', 'zupt_car')
 
     return configs
 

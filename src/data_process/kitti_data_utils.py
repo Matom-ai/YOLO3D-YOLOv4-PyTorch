@@ -14,38 +14,82 @@ from __future__ import print_function
 
 import numpy as np
 import cv2
+import torch
 
 
 class Object3d(object):
     ''' 3d object label '''
 
-    def __init__(self, label_file_line):
-        data = label_file_line.split(' ')
-        data[1:] = [float(x) for x in data[1:]]
-        # extract label, truncation, occlusion
-        self.type = data[0]  # 'Car', 'Pedestrian', ...
-        self.cls_id = self.cls_type_to_id(self.type)
-        self.truncation = data[1]  # truncated pixel ratio [0..1]
-        self.occlusion = int(data[2])  # 0=visible, 1=partly occluded, 2=fully occluded, 3=unknown
-        self.alpha = data[3]  # object observation angle [-pi..pi]
+    def __init__(self, *args):
+        """I'm about to do something unholy
+        But they forced my hand by making this extremely useless.
+        """
+        if isinstance(args[0], str):
+            label_file_line = args[0]
+            data = label_file_line.split(' ')
+            data[1:] = [float(x) for x in data[1:]]
+            # extract label, truncation, occlusion
+            self.type = data[0]  # 'Car', 'Pedestrian', ...
+            self.cls_id = self.cls_type_to_id(self.type)
+            self.truncation = data[1]  # truncated pixel ratio [0..1]
+            self.occlusion = int(data[2])  # 0=visible, 1=partly occluded, 2=fully occluded, 3=unknown
+            self.alpha = data[3]  # object observation angle [-pi..pi]
 
-        # extract 2d bounding box in 0-based coordinates
-        self.xmin = data[4]  # left
-        self.ymin = data[5]  # top
-        self.xmax = data[6]  # right
-        self.ymax = data[7]  # bottom
-        self.box2d = np.array([self.xmin, self.ymin, self.xmax, self.ymax])
+            # extract 2d bounding box in 0-based coordinates
+            self.xmin = data[4]  # left
+            self.ymin = data[5]  # top
+            self.xmax = data[6]  # right
+            self.ymax = data[7]  # bottom
+            self.box2d = np.array([self.xmin, self.ymin, self.xmax, self.ymax])
 
-        # extract 3d bounding box information
-        self.h = data[8]  # box height
-        self.w = data[9]  # box width
-        self.l = data[10]  # box length (in meters)
-        self.t = (data[11], data[12], data[13])  # location (x,y,z) in camera coord.
-        self.dis_to_cam = np.linalg.norm(self.t)
-        self.ry = data[14]  # yaw angle (around Y-axis in camera coordinates) [-pi..pi]
-        self.score = data[15] if data.__len__() == 16 else -1.0
-        self.level_str = None
-        self.level = self.get_obj_level()
+            # extract 3d bounding box information
+            #NOTE: FOR ZUPT
+            '''
+            self.h = data[8]  # box height
+            self.w = data[9]  # box width
+            self.l = data[10]  # box length (in meters)
+            '''
+            self.h = data[10]  # box height
+            self.w = data[8]  # box width
+            self.l = data[9]  # box length (in meters)
+
+            self.t = (data[11], data[12], data[13])  # location (x,y,z) in camera coord.
+            self.dis_to_cam = np.linalg.norm(self.t)
+            self.ry = data[14]  # yaw angle (around Y-axis in camera coordinates) [-pi..pi]
+            self.score = data[15] if data.__len__() == 16 else -1.0
+            self.level_str = None
+            self.level = self.get_obj_level()
+        elif len(args) == 7 and torch.is_tensor(args[0]):
+            x, y, z, h, w, l, yaw = args
+
+            self.type = 'Car'  # 'Car', 'Pedestrian', ...
+            self.cls_id = self.cls_type_to_id(self.type)
+            self.truncation = 0  # truncated pixel ratio [0..1]
+            self.occlusion = 0  # 0=visible, 1=partly occluded, 2=fully occluded, 3=unknown
+            self.alpha = yaw  # object observation angle [-pi..pi]
+
+            # extract 2d bounding box in 0-based coordinates
+            self.xmin = 0  # left
+            self.ymin = 0  # top
+            self.xmax = 0  # right
+            self.ymax = 0  # bottom
+            self.box2d = np.array([self.xmin, self.ymin, self.xmax, self.ymax])
+
+            self.h = float(h)  # box height
+            self.w = float(w)  # box width
+            self.l = float(l)  # box length (in meters)
+
+            self.t = (float(x), float(y), float(z))  # location (x,y,z) in camera coord.
+            self.dis_to_cam = np.linalg.norm(self.t)
+            self.ry = yaw  # yaw angle (around Y-axis in camera coordinates) [-pi..pi]
+            self.score = 1.0
+            self.level_str = None
+            self.level = self.get_obj_level()
+        else:
+            raise Exception(f'Unexpected args in constructor: {args}')
+
+    def rotate_ZUPT(self):
+        self.t = (-self.t[2], -self.t[0], -self.t[1])
 
     def cls_type_to_id(self, cls_type):
         # Car and Van ==> Car class
@@ -379,14 +423,19 @@ def compute_box_3d(obj, P):
     corners_3d[0, :] = corners_3d[0, :] + obj.t[0]
     corners_3d[1, :] = corners_3d[1, :] + obj.t[1]
     corners_3d[2, :] = corners_3d[2, :] + obj.t[2]
+    #print(corners_3d)
     # print 'cornsers_3d: ', corners_3d
     # only draw 3d bounding box for objs in front of the camera
+    '''
     if np.any(corners_3d[2, :] < 0.1):
-        corners_2d = None
+        corners_2d = None #This is unfortunate NOTE:
         return corners_2d, np.transpose(corners_3d)
+    '''
 
     # project the 3d bounding box into the image plane
-    corners_2d = project_to_image(np.transpose(corners_3d), P)
+    corners_2d = None
+    if P is not None:
+        corners_2d = project_to_image(np.transpose(corners_3d), P)
     # print 'corners_2d: ', corners_2d
     return corners_2d, np.transpose(corners_3d)
 

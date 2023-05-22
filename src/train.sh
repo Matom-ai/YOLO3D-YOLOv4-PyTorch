@@ -10,6 +10,6 @@ python train.py \
   --gpu_idx 0 \
   --lr_type 'cosin' \
   --lr 0.001 \
-  --num_epochs 300 \
+  --num_epochs 600 \
   --tensorboard_freq 50 \
   --checkpoint_freq 5

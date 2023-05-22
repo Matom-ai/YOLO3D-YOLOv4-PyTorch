@@ -35,6 +35,7 @@ from utils.misc import AverageMeter, ProgressMeter
 from utils.logger import Logger
 from config.train_config import parse_train_configs
 from evaluate import evaluate_mAP
+from utils.evaluation_utils import post_processing, rescale_boxes, post_processing_v2
 
 
 def main():
@@ -192,6 +193,7 @@ def cleanup():
 
 
 def train_one_epoch(train_dataloader, model, optimizer, lr_scheduler, epoch, configs, logger, tb_writer):
+    import cv2
     batch_time = AverageMeter('Time', ':6.3f')
     data_time = AverageMeter('Data', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
@@ -212,9 +214,24 @@ def train_one_epoch(train_dataloader, model, optimizer, lr_scheduler, epoch, con
 
         batch_size = imgs.size(0)
 
+        #toshow = imgs[0].squeeze() * 255
+        #
         targets = targets.to(configs.device, non_blocking=True)
         imgs = imgs.to(configs.device, non_blocking=True)
         total_loss, outputs = model(imgs, targets)
+
+        #print(imgs.shape)
+        #toshow = toshow.permute(1, 2, 0).numpy().astype(np.uint8)
+        #toshow = cv2.resize(toshow, (configs.img_size, configs.img_size))
+        #toshow = cv2.rotate(toshow, cv2.ROTATE_180)
+        #print(toshow.shape)
+        #detections = post_processing_v2(outputs, conf_thresh=configs.conf_thresh, nms_thresh=configs.nms_thresh)
+        #to_output = outputs[0]
+        #print(detections.shape)
+
+        #cv2.imshow('amogus', toshow)
+        #if cv2.waitKey(0) & 0xff == 27:
+        #    break
 
         # For torch.nn.DataParallel case
         if (not configs.distributed) and (configs.gpu_idx is None):

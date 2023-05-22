@@ -27,7 +27,7 @@ import config.kitti_config as cnf
 class KittiDataset(Dataset):
     def __init__(self, dataset_dir, mode='train', lidar_transforms=None,
                  aug_transforms=None, multiscale=False, num_samples=None,
-                 mosaic=False, random_padding=False):
+                 mosaic=False, random_padding=False, display_3d=False):
         self.dataset_dir = dataset_dir
         assert mode in ['train', 'val', 'test'], 'Invalid mode: {}'.format(mode)
         self.mode = mode
@@ -51,6 +51,8 @@ class KittiDataset(Dataset):
         self.label_dir = os.path.join(self.dataset_dir, sub_folder, "label_2")
         split_txt_path = os.path.join(self.dataset_dir, 'ImageSets', '{}.txt'.format(mode))
         self.image_idx_list = [x.strip() for x in open(split_txt_path).readlines()]
+
+        self.display_3d = display_3d
 
 
         if self.is_test:
@@ -82,7 +84,10 @@ class KittiDataset(Dataset):
         rgb_map = kitti_bev_utils.makeBVFeature(lidarData, cnf.DISCRETIZATION, cnf.boundary)
         img_file = os.path.join(self.image_dir, '{:06d}.png'.format(sample_id))
 
-        return img_file, rgb_map
+        if self.display_3d:
+            return img_file, (rgb_map, lidarData)
+        else:
+            return img_file, rgb_map
 
     def load_img_with_targets(self, index):
         """Load images and targets for the training and validation phase"""
@@ -118,7 +123,10 @@ class KittiDataset(Dataset):
             rgb_map, targets = self.aug_transforms(rgb_map, targets)
 
 
-        return img_file, rgb_map, targets
+        if self.display_3d:
+            return (img_file, lidarData), rgb_map, targets
+        else:
+            return img_file, rgb_map, targets
 
     def load_mosaic(self, index):
         """loads images in a mosaic
@@ -175,6 +183,9 @@ class KittiDataset(Dataset):
     def __len__(self):
         return len(self.sample_id_list)
 
+    def display_3D(self, val):
+        self.display_3d = val
+
     def remove_invalid_idx(self, image_idx_list):
         """Discard samples which don't have current training class objects, which will not be used for training."""
 
@@ -184,12 +195,18 @@ class KittiDataset(Dataset):
             objects = self.get_label(sample_id)
             calib = self.get_calib(sample_id)
             labels, noObjectLabels = kitti_bev_utils.read_labels_for_bevbox(objects)
+            #print(f"sample_id: {sample_id}")
+            #print("labels_before")
+            #print(labels)
             if not noObjectLabels:
                 labels[:, 1:] = transformation.camera_to_lidar_box(
                         labels[:, 1:],
                         calib.V2C,
                         calib.R0,
                         calib.P)  # convert rect cam to velo cord
+            #print("labels_after")
+            #print(labels)
+            #input()
 
             valid_list = []
             for i in range(labels.shape[0]):
@@ -199,6 +216,7 @@ class KittiDataset(Dataset):
 
             if len(valid_list) > 0:
                 sample_id_list.append(sample_id)
+        print(f"len(sample_id_list): {len(sample_id_list)}")
 
         return sample_id_list
 
@@ -210,6 +228,20 @@ class KittiDataset(Dataset):
         x_range = [cnf.boundary["minX"], cnf.boundary["maxX"]]
         y_range = [cnf.boundary["minY"], cnf.boundary["maxY"]]
         z_range = [cnf.boundary["minZ"], cnf.boundary["maxZ"]]
+        #print(x_range)
+        #print(y_range)
+        #print(z_range)
+        #print(xyz)
+        if not (x_range[0] <= xyz[0] <= x_range[1]):
+            print("CRASH X")
+            input()
+        if not (y_range[0] <= xyz[1] <= y_range[1]):
+            print("CRASH Y")
+            input()
+        if not (z_range[0] <= xyz[2] <= z_range[1]):
+            print("CRASH Z")
+            print(xyz[2])
+            input()
 
         if (x_range[0] <= xyz[0] <= x_range[1]) and (y_range[0] <= xyz[1] <= y_range[1]) and \
                 (z_range[0] <= xyz[2] <= z_range[1]):

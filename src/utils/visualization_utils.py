@@ -153,10 +153,11 @@ def show_image_with_boxes(img, objects, calib, show3d=False):
 
     img2 = np.copy(img)  # for 3d bbox
     for obj in objects:
-        if obj.type == 'DontCare': continue
+        if obj.type == 'DontCare': continue #but I do care
         # cv2.rectangle(img2, (int(obj.xmin),int(obj.ymin)),
         #    (int(obj.xmax),int(obj.ymax)), (0,255,0), 2)
         box3d_pts_2d, box3d_pts_3d = kitti_data_utils.compute_box_3d(obj, calib.P)
+        #print(box3d_pts_2d)
         if box3d_pts_2d is not None:
             img2 = kitti_data_utils.draw_projected_box3d(img2, box3d_pts_2d, cnf.colors[obj.cls_id])
     if show3d:
@@ -195,6 +196,18 @@ def show_lidar_with_boxes(pc_velo, objects, calib,
         mlab.plot3d([x1, x2], [y1, y2], [z1, z2], color=(0.5, 0.5, 0.5), tube_radius=None, line_width=1, figure=fig)
 
     mlab.view(distance=90)
+
+
+def merge_side(img_1, img_2):
+    img_shape = img_1.shape[:2]
+    print(img_shape)
+    a = img_shape[1]
+    out_img = np.zeros((img_shape[0], img_shape[1]*2, 3), dtype=np.uint8)
+    out_img[:, :a, :] = img_1
+    out_img[:, a:, :] = img_2
+    print(out_img.shape)
+
+    return out_img
 
 
 def merge_rgb_to_bev(img_rgb, img_bev, output_width):

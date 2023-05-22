@@ -18,17 +18,17 @@ boundary = {
     "maxX": 50,
     "minY": -25,
     "maxY": 25,
-    "minZ": -2.73,
+    "minZ": -4,
     "maxZ": 1.27
 }
 '''
 boundary = {
-    "minX": -2000,
-    "maxX": 2000,
-    "minY": -2000,
-    "maxY": 2000,
-    "minZ": -2000,
-    "maxZ": 2000
+    "minX": 0,
+    "maxX": 50,
+    "minY": -25,
+    "maxY": 25,
+    "minZ": -4,
+    "maxZ": 3
 }
 
 # Back back (of vehicle) Point Cloud boundary for BEV
@@ -37,8 +37,8 @@ boundary_back = {
     "maxX": 0,
     "minY": -25,
     "maxY": 25,
-    "minZ": -2.73,
-    "maxZ": 1.27
+    "minZ": -4,
+    "maxZ": 3
 }
 
 BEV_WIDTH = 608  # across y axis -25m ~ 25m

@@ -62,7 +62,8 @@ def create_val_dataloader(configs):
     """Create dataloader for validation"""
     val_sampler = None
     val_dataset = KittiDataset(configs.dataset_dir, mode='val', lidar_transforms=None, aug_transforms=None,
-                               multiscale=False, num_samples=configs.num_samples, mosaic=False, random_padding=False)
+                               multiscale=False, num_samples=configs.num_samples, mosaic=False, random_padding=False,
+                               display_3d=configs.display_3d)
     if configs.distributed:
         val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset, shuffle=False)
     val_dataloader = DataLoader(val_dataset, batch_size=configs.batch_size, shuffle=False,
@@ -76,7 +77,8 @@ def create_test_dataloader(configs):
     """Create dataloader for testing phase"""
 
     test_dataset = KittiDataset(configs.dataset_dir, mode='test', lidar_transforms=None, aug_transforms=None,
-                                multiscale=False, num_samples=configs.num_samples, mosaic=False, random_padding=False)
+                                multiscale=False, num_samples=configs.num_samples, mosaic=False, random_padding=False,
+                                display_3d=configs.display_3d)
     test_sampler = None
     if configs.distributed:
         test_sampler = torch.utils.data.distributed.DistributedSampler(test_dataset)
@@ -96,8 +98,9 @@ if __name__ == '__main__':
 
     import data_process.kitti_bev_utils as bev_utils
     from data_process import kitti_data_utils
-    from utils.visualization_utils import show_image_with_boxes, merge_rgb_to_bev, invert_target
+    from utils.visualization_utils import show_image_with_boxes, merge_rgb_to_bev, invert_target, merge_side
     import config.kitti_config as cnf
+    import open3d as o3d
 
     parser = argparse.ArgumentParser(description='YOLO3D Implementation')
 
@@ -131,11 +134,15 @@ if __name__ == '__main__':
                         help='the width of showing output, the height maybe vary')
     parser.add_argument('--save_img', action='store_true',
                         help='If true, save the images')
+    parser.add_argument('--display_3d', action='store_true',
+                        help='If true, return pointcloud alongside images.')
 
     configs = edict(vars(parser.parse_args()))
     configs.distributed = False  # For testing
     configs.pin_memory = False
-    configs.dataset_dir = os.path.join('../../', 'dataset', 'kitti')
+    #configs.dataset_dir = os.path.join('../../', 'dataset', 'kitti')
+    #configs.dataset_dir = os.path.join('../../', 'dataset', 'zupt')
+    configs.dataset_dir = os.path.join('../../', 'dataset', 'zupt_car')
 
     if configs.save_img:
         print('saving validation images')
@@ -153,12 +160,58 @@ if __name__ == '__main__':
     print('\n\nPress n to see the next sample >>> Press Esc to quit...')
 
     for batch_i, (img_files, imgs, targets) in enumerate(dataloader):
+        if configs.display_3d:
+            lidarData = img_files[0][1:][0]
+            img_files = img_files[0]
+            #img_files, lidarData = img_files
+            points_np = lidarData[:,:3]
+            #print(points_np)
+            #print(points_np.shape)
+            pcd = o3d.geometry.PointCloud()
+            pcd.points = o3d.utility.Vector3dVector(points_np)
+            rotation = pcd.get_rotation_matrix_from_xyz((np.pi, 0, 0))
+            #pcd.rotate(rotation, center=(0,0,0))
+        else:
+            lidarData = None
         if not (configs.mosaic and configs.show_train_data):
+            geoms = [pcd]
             img_file = img_files[0]
             img_rgb = cv2.imread(img_file)
+            img_rgb_clean = cv2.imread(img_file)
             calib = kitti_data_utils.Calibration(img_file.replace(".png", ".txt").replace("image_2", "calib"))
             objects_pred = invert_target(targets[:, 1:], calib, img_rgb.shape, RGB_Map=None)
-            img_rgb = show_image_with_boxes(img_rgb, objects_pred, calib, False)
+            img_rgb = show_image_with_boxes(img_rgb, objects_pred, calib, False) #Draws boxes on actual image
+            for opred in objects_pred:
+                lines = [
+                    [0, 1],
+                    [1, 2],
+                    [0, 3],
+                    [2, 3],
+                    [4, 5],
+                    [4, 7],
+                    [5, 6],
+                    [6, 7],
+                    [0, 4],
+                    [1, 5],
+                    [2, 6],
+                    [3, 7],
+                ]
+                opred.rotate_ZUPT()
+                _, corners_3d = kitti_data_utils.compute_box_3d(opred, None)
+                line_set = o3d.geometry.LineSet(
+                    points=o3d.utility.Vector3dVector(corners_3d),
+                    lines=o3d.utility.Vector2iVector(lines),
+                )
+                mesh_box = o3d.geometry.TriangleMesh.create_box(width=0.35105,
+                                                height=0.35105,
+                                                depth=0.133133)
+                geoms.append(line_set)
+                sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.1)
+                sphere.translate((1, 1, 1))
+                #mesh_box = mesh_box.translate((0, 0, 0))
+            geoms.append(mesh_box)
+            geoms.append(sphere)
+            o3d.visualization.draw_geometries(geoms)
 
         # target has (b, cl, x, y, z, h, w, l, im, re)
         targets[:, 2:8] *= configs.img_size
@@ -167,12 +220,17 @@ if __name__ == '__main__':
         img_bev = img_bev.permute(1, 2, 0).numpy().astype(np.uint8)
         img_bev = cv2.resize(img_bev, (configs.img_size, configs.img_size))
 
+        img_bev_clean = imgs.squeeze() * 255
+        img_bev_clean = img_bev_clean.permute(1, 2, 0).numpy().astype(np.uint8)
+        img_bev_clean = cv2.resize(img_bev_clean, (configs.img_size, configs.img_size))
+
         # Draw rotated box
         for c, x, y, z, h, w, l, im, re in targets[:, 1:].numpy():
             yaw = np.arctan2(im, re)
             bev_utils.drawRotatedBox(img_bev, x, y, w, l, yaw, cnf.colors[int(c)])
 
         img_bev = cv2.rotate(img_bev, cv2.ROTATE_180)
+        img_bev_clean = cv2.rotate(img_bev_clean, cv2.ROTATE_180)
 
         if configs.mosaic and configs.show_train_data:
             if configs.save_img:
@@ -182,11 +240,19 @@ if __name__ == '__main__':
                 cv2.imshow('mosaic_sample', img_bev)
         else:
             out_img = merge_rgb_to_bev(img_rgb, img_bev, output_width=configs.output_width)
+            out_img_clean = merge_rgb_to_bev(img_rgb_clean, img_bev_clean, output_width=configs.output_width)
+            show_img = merge_side(out_img, out_img_clean)
             if configs.save_img:
                 fn = os.path.basename(img_file)
-                cv2.imwrite(os.path.join(configs.saved_dir, fn), out_img)
+                #cv2.imwrite(os.path.join(configs.saved_dir, fn), out_img)
+                print(configs.saved_dir)
+                cv2.imwrite(os.path.join(configs.saved_dir, fn), show_img)
             else:
-                cv2.imshow('single_sample', out_img)
+                #print(out_img)
+                #print(out_img*1.0)
+                #cv2.imshow(f'single_sample{img_file}', out_img)
+                #cv2.imshow(f'single_sample{img_file}', out_img_clean)
+                cv2.imshow(f'single_sample{img_file}', show_img)
 
         if not configs.save_img:
             if cv2.waitKey(0) & 0xff == 27:
