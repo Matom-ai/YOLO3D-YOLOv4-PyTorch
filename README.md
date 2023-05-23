@@ -409,12 +409,12 @@ They are such:
 1. (I thoroughly recommend to) Create environment.
 This can be done by doing this:
 ```bash
-$ python3.10 -m venv env
-$ source env/bin/activate
+python3.10 -m venv env
+source env/bin/activate
 ```
 You may also want to install the requirements.
 ```bash
-(env)$ pip install -r requirements310.txt
+(env)pip install -r requirements310.txt
 ```
 
 2. Download dataset from drive (ask Vytenis)
