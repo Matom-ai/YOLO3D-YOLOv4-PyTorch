@@ -419,3 +419,22 @@ pip install -r requirements310.txt
 
 2. Download dataset from drive (ask Vytenis)
 3. Run `bash deploy_data.sh`
+4. Play.
+
+## Usage.
+To see the results of the trained model, download the model from drive.
+
+```bash
+
+mkdir checkpoints/yolo3d_yolov4_im_re/
+mv ~/Downloads/Model_yolo3d_yolov4_im_re_epoch_600.pth checkpoints/yolo3d_yolov4_im_re/Model_yolo3d_yolov4_im_re_epoch_600.pth
+cd src/
+bash test.sh
+```
+
+To see ground truth:
+```bash
+
+cd src/data_process/
+python kitti_dataloader.py --output-width 608 --display_3d
+```
