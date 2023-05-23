@@ -402,3 +402,20 @@ They are such:
 ```python
             bbox.extend([obj.t[0], obj.t[1], obj.t[2], obj.h, obj.w, obj.l, obj.ry])
 ```
+
+
+## Reproducability.
+
+1. (I thoroughly recommend to) Create environment.
+This can be done by doing this:
+```bash
+$ python3.10 -m venv env
+$ source env/bin/activate
+```
+You may also want to install the requirements.
+```bash
+(env)$ pip install -r requirements310.txt
+```
+
+2. Download dataset from drive (ask Vytenis)
+3. Run `bash deploy_data.sh`
