@@ -139,46 +139,68 @@ if __name__ == '__main__':
             img_bev_clean = imgs_bev.squeeze() * 255
             img_bev_clean = img_bev_clean.permute(1, 2, 0).numpy().astype(np.uint8)
             img_bev_clean = cv2.resize(img_bev_clean, (configs.img_size, configs.img_size))
-            for detections in img_detections:
-                if detections is None:
-                    continue
-                # Rescale boxes to original image
-                for x, y, z, h, w, l, im, re, *_, cls_pred in detections:
-                    # Draw rotated box
-                    yaw = torch.atan2(im, re)
-                    detection_object = kitti_data_utils.Object3d(x, y, z, h, w, l, yaw) # Create the object here
-                    _, corners_3d = kitti_data_utils.compute_box_3d(detection_object, None)
-                    print(f"x: {x}, y: {y}, z: {z}, w: {w}, h: {h}, l: {l}, yaw: {yaw}")
-                    print(corners_3d)
-                    lines = [
-                        [0, 1],
-                        [1, 2],
-                        [0, 3],
-                        [2, 3],
-                        [4, 5],
-                        [4, 7],
-                        [5, 6],
-                        [6, 7],
-                        [0, 4],
-                        [1, 5],
-                        [2, 6],
-                        [3, 7],
-                    ]
-                    line_set = o3d.geometry.LineSet(
-                        points=o3d.utility.Vector3dVector(corners_3d),
-                        lines=o3d.utility.Vector2iVector(lines),
-                    )
-                    o3d.visualization.draw_geometries([pcd, line_set])
-                    input()
-                    kitti_bev_utils.drawRotatedBox(img_bev, x, y, w, l, yaw, cnf.colors[int(cls_pred)])
-            o3d.visualization.draw_geometries([pcd])
-            raise Exception('')
 
             img_rgb = cv2.imread(img_paths[0])
             img_rgb_clean = cv2.imread(img_paths[0])
             #img_rgb_clean = cv2.imread(img_file)
             calib = kitti_data_utils.Calibration(img_paths[0].replace(".png", ".txt").replace("image_2", "calib"))
             objects_pred = predictions_to_kitti_format(img_detections, calib, img_rgb.shape, configs.img_size)
+            geoms = [pcd]
+            for opred in objects_pred:
+                #print(opred)
+                # Rescale boxes to original image
+                # Draw rotated box
+                opred.translate_ZUPT()
+                #print(f"x: {x}, y: {y}, z: {z}, w: {w}, h: {h}, l: {l}, yaw: {yaw}")
+                lines = [
+                    [0, 1],
+                    [1, 2],
+                    [0, 3],
+                    [2, 3],
+                    [4, 5],
+                    [4, 7],
+                    [5, 6],
+                    [6, 7],
+                    [0, 4],
+                    [1, 5],
+                    [2, 6],
+                    [3, 7],
+                ]
+                _, corners_3d = kitti_data_utils.compute_box_3d(opred, None)
+                line_set = o3d.geometry.LineSet(
+                    points=o3d.utility.Vector3dVector(corners_3d),
+                    lines=o3d.utility.Vector2iVector(lines),
+                )
+                roll = 0
+                pitch = 0
+                yaw = opred.ry
+                line_set.translate((0, opred.h/2, 0), relative = True)
+                rotation = line_set.get_rotation_matrix_from_xyz((roll, pitch, yaw))
+                line_set.rotate(rotation, center = opred.t)
+                mesh_box = o3d.geometry.TriangleMesh.create_sphere(radius=0.1)
+                detection_sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.05)
+                detection_sphere.translate(opred.t, relative = False)
+                detection_sphere.paint_uniform_color(np.array([0.5,0.5,0]))
+                geoms.append(line_set)
+                geoms.append(detection_sphere)
+            camera_sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.1)
+            camera_sphere.translate((-1, 0, 4), relative = False)
+            spherex = o3d.geometry.TriangleMesh.create_sphere(radius=0.1)
+            spherex.translate((1, 0, 0), relative = False)
+            spherex.paint_uniform_color(np.array([1,0,0]))
+            spherey = o3d.geometry.TriangleMesh.create_sphere(radius=0.1)
+            spherey.translate((0, 1, 0), relative = False)
+            spherey.paint_uniform_color(np.array([0,1,0]))
+            spherez = o3d.geometry.TriangleMesh.create_sphere(radius=0.1)
+            spherez.translate((0, 0, 1), relative = False)
+            spherez.paint_uniform_color(np.array([0,0,1]))
+            geoms.append(mesh_box)
+            geoms.append(spherex)
+            geoms.append(spherey)
+            geoms.append(spherez)
+            geoms.append(camera_sphere)
+            o3d.visualization.draw_geometries(geoms)
+            input("Enter to continue...")
             img_rgb = show_image_with_boxes(img_rgb, objects_pred, calib, False)
 
             img_bev = cv2.flip(cv2.flip(img_bev, 0), 1)

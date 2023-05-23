@@ -88,8 +88,16 @@ class Object3d(object):
         else:
             raise Exception(f'Unexpected args in constructor: {args}')
 
-    def rotate_ZUPT(self):
-        self.t = (-self.t[2], -self.t[0], -self.t[1])
+    def translate_ZUPT(self):
+        #self.t = (-self.t[2]-0.2, -self.t[0], self.t[1]+4)
+        self.t = (-self.t[2], -self.t[0], self.t[1]+4)
+        temp_w = self.w
+        temp_h = self.h
+        temp_l = self.l
+        self.w = temp_h
+        self.h = temp_l
+        self.l = temp_w
+        #self.t = (-self.t[0], self.t[1], self.t[2])
 
     def cls_type_to_id(self, cls_type):
         # Car and Van ==> Car class
@@ -405,7 +413,8 @@ def compute_box_3d(obj, P):
             corners_3d: (8,3) array in in rect camera coord.
     '''
     # compute rotational matrix around yaw axis
-    R = roty(obj.ry)
+    #R = roty(obj.ry)
+    R = roty(0)
 
     # 3d bounding box dimensions
     l = obj.l

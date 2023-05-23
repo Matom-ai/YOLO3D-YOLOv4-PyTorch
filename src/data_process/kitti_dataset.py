@@ -19,6 +19,7 @@ import torch.nn.functional as F
 import cv2
 
 sys.path.append('../')
+BIN_EXT = 'bin'
 
 from data_process import transformation, kitti_bev_utils, kitti_data_utils
 import config.kitti_config as cnf
@@ -50,6 +51,7 @@ class KittiDataset(Dataset):
         self.calib_dir = os.path.join(self.dataset_dir, sub_folder, "calib")
         self.label_dir = os.path.join(self.dataset_dir, sub_folder, "label_2")
         split_txt_path = os.path.join(self.dataset_dir, 'ImageSets', '{}.txt'.format(mode))
+        print(split_txt_path)
         self.image_idx_list = [x.strip() for x in open(split_txt_path).readlines()]
 
         self.display_3d = display_3d
@@ -241,7 +243,7 @@ class KittiDataset(Dataset):
         if not (z_range[0] <= xyz[2] <= z_range[1]):
             print("CRASH Z")
             print(xyz[2])
-            input()
+            #input()
 
         if (x_range[0] <= xyz[0] <= x_range[1]) and (y_range[0] <= xyz[1] <= y_range[1]) and \
                 (z_range[0] <= xyz[2] <= z_range[1]):
@@ -273,7 +275,7 @@ class KittiDataset(Dataset):
         return cv2.imread(img_file)  # (H, W, C) -> (H, W, 3) OpenCV reads in BGR mode
 
     def get_lidar(self, idx):
-        lidar_file = os.path.join(self.lidar_dir, '{:06d}.bin'.format(idx))
+        lidar_file = os.path.join(self.lidar_dir, ('{:06d}.' + BIN_EXT).format(idx))
         # assert os.path.isfile(lidar_file)
         return np.fromfile(lidar_file, dtype=np.float32).reshape(-1, 4)
 

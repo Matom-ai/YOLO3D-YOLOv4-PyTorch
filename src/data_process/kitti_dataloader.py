@@ -169,6 +169,14 @@ if __name__ == '__main__':
             #print(points_np.shape)
             pcd = o3d.geometry.PointCloud()
             pcd.points = o3d.utility.Vector3dVector(points_np)
+            print("mean")
+            print(np.mean(points_np[:,0]))
+            print(np.mean(points_np[:,1]))
+            print(np.mean(points_np[:,2]))
+            print("min")
+            print(np.min(points_np[:,0]))
+            print(np.min(points_np[:,1]))
+            print(np.min(points_np[:,2]))
             rotation = pcd.get_rotation_matrix_from_xyz((np.pi, 0, 0))
             #pcd.rotate(rotation, center=(0,0,0))
         else:
@@ -176,6 +184,7 @@ if __name__ == '__main__':
         if not (configs.mosaic and configs.show_train_data):
             geoms = [pcd]
             img_file = img_files[0]
+            print(img_file)
             img_rgb = cv2.imread(img_file)
             img_rgb_clean = cv2.imread(img_file)
             calib = kitti_data_utils.Calibration(img_file.replace(".png", ".txt").replace("image_2", "calib"))
@@ -196,22 +205,43 @@ if __name__ == '__main__':
                     [2, 6],
                     [3, 7],
                 ]
-                opred.rotate_ZUPT()
+                opred.translate_ZUPT()
                 _, corners_3d = kitti_data_utils.compute_box_3d(opred, None)
                 line_set = o3d.geometry.LineSet(
                     points=o3d.utility.Vector3dVector(corners_3d),
                     lines=o3d.utility.Vector2iVector(lines),
                 )
-                mesh_box = o3d.geometry.TriangleMesh.create_box(width=0.35105,
-                                                height=0.35105,
-                                                depth=0.133133)
+                roll = 0
+                pitch = 0
+                yaw = opred.ry
+                line_set.translate((0, opred.h/2, 0), relative = True)
+                rotation = line_set.get_rotation_matrix_from_xyz((roll, pitch, yaw))
+                line_set.rotate(rotation, center = opred.t)
+                mesh_box = o3d.geometry.TriangleMesh.create_sphere(radius=0.1)
+                detection_sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.05)
+                detection_sphere.translate(opred.t, relative = False)
+                detection_sphere.paint_uniform_color(np.array([0.5,0.5,0]))
                 geoms.append(line_set)
-                sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.1)
-                sphere.translate((1, 1, 1))
+                geoms.append(detection_sphere)
+                camera_sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.1)
+                camera_sphere.translate((-1, 0, 4), relative = False)
+                spherex = o3d.geometry.TriangleMesh.create_sphere(radius=0.1)
+                spherex.translate((1, 0, 0), relative = False)
+                spherex.paint_uniform_color(np.array([1,0,0]))
+                spherey = o3d.geometry.TriangleMesh.create_sphere(radius=0.1)
+                spherey.translate((0, 1, 0), relative = False)
+                spherey.paint_uniform_color(np.array([0,1,0]))
+                spherez = o3d.geometry.TriangleMesh.create_sphere(radius=0.1)
+                spherez.translate((0, 0, 1), relative = False)
+                spherez.paint_uniform_color(np.array([0,0,1]))
                 #mesh_box = mesh_box.translate((0, 0, 0))
             geoms.append(mesh_box)
-            geoms.append(sphere)
+            geoms.append(spherex)
+            geoms.append(spherey)
+            geoms.append(spherez)
+            geoms.append(camera_sphere)
             o3d.visualization.draw_geometries(geoms)
+            input("Enter to continue...")
 
         # target has (b, cl, x, y, z, h, w, l, im, re)
         targets[:, 2:8] *= configs.img_size
