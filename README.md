@@ -426,6 +426,7 @@ To see the results of the trained model, download the model from drive.
 
 ```bash
 
+mkdir checkpoints/
 mkdir checkpoints/yolo3d_yolov4_im_re/
 mv ~/Downloads/Model_yolo3d_yolov4_im_re_epoch_600.pth checkpoints/yolo3d_yolov4_im_re/Model_yolo3d_yolov4_im_re_epoch_600.pth
 cd src/
