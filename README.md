@@ -414,7 +414,7 @@ source env/bin/activate
 ```
 You may also want to install the requirements.
 ```bash
-(env)pip install -r requirements310.txt
+pip install -r requirements310.txt
 ```
 
 2. Download dataset from drive (ask Vytenis)
